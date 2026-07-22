@@ -1,0 +1,307 @@
+SIMULATORE MARGINI STUDIO DENTISTICO - GUIDA SETUP EXCEL
+
+========================================================================
+ISTRUZIONI PER CREARE IL FILE 03_simulatore_margini.xlsx
+========================================================================
+
+PASSO 1: Crea una nuovo file Excel con 3 fogli
+  - Foglio 1: "DATA" (tabella master con i calcoli)
+  - Foglio 2: "SIMULATORE" (l'interfaccia interattiva con input/output)
+  - Foglio 3: "GRAFICO_TORNADO" (il grafico di sensibilità)
+
+========================================================================
+FOGLIO 1: "DATA" - Tabella Master dei Margini
+========================================================================
+
+STRUTTURA (copia questo header nelle celle A1:N1):
+
+| A | B | C | D | E | F | G | H | I | J | K | L | M | N |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| ID_Prest | Nome_Prest | Prezzo_List | ID_Med | Nome_Med | Tipo_Acc | Valore_Acc | Costo_Lab | Costo_Mat | Tempo_Min | Costo_Poltrona | Imponibile | Comp_Medico | MARGINE_EUR | MARGINE_% |
+
+DATI DI BASE (Righe 2-37, perché 12 prestazioni × 3 medici):
+
+Row 2:  1 | Igiene Dentale | 80 | 1 | Dr. Rossi | Percentuale | 0.35 | 0 | 7.5 | 30 | =I2/60*28 | =(B2-F2) | =(K2*G2) | =(B2-F2-H2-I2-L2) | =O2/B2*100
+Row 3:  1 | Igiene Dentale | 80 | 2 | Dr. Bianchi | Percentuale | 0.42 | 0 | 7.5 | 30 | =I3/60*28 | =(B3-F3) | =(K3*G3) | =(B3-F3-H3-I3-L3) | =O3/B3*100
+Row 4:  1 | Igiene Dentale | 80 | 3 | Dr. Verdi | Fisso | 180 | 0 | 7.5 | 30 | =I4/60*28 | =(B4-F4) | 180 | =(B4-F4-H4-I4-L4) | =O4/B4*100
+
+... (continua per tutte le 36 combinazioni)
+
+CALCOLI CHIAVE:
+  - Colonna J (Costo Poltrona): =I[ROW]/60*28
+  - Colonna K (Imponibile): =B[ROW]-F[ROW]
+  - Colonna L (Compenso Medico): 
+      =IF(G[ROW]="Percentuale", K[ROW]*H[ROW], H[ROW])
+  - Colonna M (Costo Totale): =F[ROW]+G[ROW]+J[ROW]+L[ROW]
+  - Colonna N (Margine €): =B[ROW]-M[ROW]
+  - Colonna O (Margine %): =N[ROW]/B[ROW]*100
+
+========================================================================
+FOGLIO 2: "SIMULATORE" - Interfaccia Interattiva con 3 Leve
+========================================================================
+
+LAYOUT:
+
+┌─────────────────────────────────────────────────────┐
+│         SIMULATORE MARGINI - INPUT PANEL            │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ SCELTA PRESTAZIONE:                                │
+│   [Dropdown] → Igiene Dentale ▼                    │
+│   (Formula: Data Validation da foglio DATA)         │
+│                                                     │
+│ SCELTA MEDICO:                                      │
+│   [Dropdown] → Dr. Rossi ▼                          │
+│   (Formula: Data Validation da foglio DATA)         │
+│                                                     │
+│ ═════════════════════════════════════════════════   │
+│              LE 3 LEVE                              │
+│ ═════════════════════════════════════════════════   │
+│                                                     │
+│ LEVA 1: TEMPO ESECUZIONE (minuti)                  │
+│   Input Cell: [C7]                                  │
+│   Valore Attuale: 90 min  [░░░░░░░░░ |]           │
+│   Range: 30-150 min                                 │
+│                                                     │
+│ LEVA 2: SCONTO PAZIENTE (%)                        │
+│   Input Cell: [C9]                                  │
+│   Valore Attuale: 8%  [░░░░░ |]                    │
+│   Range: 0-15%                                      │
+│                                                     │
+│ LEVA 3: SATURAZIONE POLTRONA (ore/sett)            │
+│   Input Cell: [C11]                                 │
+│   Valore Attuale: 30 ore  [░░░░░░░ |]              │
+│   Range: 10-40 ore                                  │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+
+OUTPUT PANEL (a destra degli input):
+
+┌─────────────────────────────────────────────────────┐
+│         SIMULATORE MARGINI - OUTPUT PANEL           │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│ PRESTAZIONE SELEZIONATA:                            │
+│   Igiene Dentale                                    │
+│   Prezzo Listino: 80 €                              │
+│                                                     │
+│ ─────────────────────────────────────────────────── │
+│                     RICAVI                          │
+│ ─────────────────────────────────────────────────── │
+│   Prezzo Listino:              80 €                 │
+│   Sconto Paziente (-8%):       -6 €                 │
+│   Prezzo Reale Incassato:      74 €                 │
+│                                                     │
+│ ─────────────────────────────────────────────────── │
+│                      COSTI                          │
+│ ─────────────────────────────────────────────────── │
+│   Laboratorio:                 0 €                  │
+│   Materiali:                   7.5 €                │
+│   Poltrona (90 min @ 28€/h):   42 €                │
+│   Compenso Medico (35%):       28 €                 │
+│   ─────────────────────────────────────────────── │
+│   COSTO TOTALE STUDIO:         77,50 €             │
+│                                                     │
+│ ═════════════════════════════════════════════════   │
+│                   RISULTATO                         │
+│ ═════════════════════════════════════════════════   │
+│                                                     │
+│   MARGINE NETTO:               -3,50 € ❌ ROSSO     │
+│   MARGINE %:                   -4.7% 🔴             │
+│                                                     │
+│   [Interpretazione: A questo medico costa più      │
+│    che guadagna. Negoziare tempi o compenso]       │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+
+SETUP EXCEL:
+
+Row 1-2: Titolo "SIMULATORE MARGINI STUDIO DENTISTICO"
+
+Row 4: "SCELTA PRESTAZIONE:"
+  A4: "Prestazione:"
+  B4: [Data Validation Dropdown] → VLOOKUP su foglio DATA colonna B
+  
+Row 5: "SCELTA MEDICO:"
+  A5: "Medico:"
+  B5: [Data Validation Dropdown] → VLOOKUP su foglio DATA colonna E
+
+Row 7: "LEVA 1: TEMPO ESECUZIONE"
+  A7: "Tempo (minuti):"
+  B7: [Numero input] (default: 90, range 30-150)
+  
+Row 9: "LEVA 2: SCONTO PAZIENTE"
+  A9: "Sconto (%):"
+  B9: [Numero input] (default: 8, range 0-15)
+  
+Row 11: "LEVA 3: SATURAZIONE POLTRONA"
+  A11: "Ore/settimana:"
+  B11: [Numero input] (default: 30, range 10-40)
+
+Row 15: "OUTPUT - RICAVI"
+Row 16:
+  A16: "Prezzo Listino:"
+  B16: =VLOOKUP(B4, DATA.A:C, 3, FALSE)
+  
+Row 17:
+  A17: "Sconto Paziente:"
+  B17: =B16 * B9 / 100
+  
+Row 18:
+  A18: "Prezzo Reale:"
+  B18: =B16 - B17
+
+Row 21: "OUTPUT - COSTI"
+Row 22:
+  A22: "Laboratorio:"
+  B22: =VLOOKUP(B4, DATA.A:H, 8, FALSE)  [Costo_Lab]
+  
+Row 23:
+  A23: "Materiali:"
+  B23: =VLOOKUP(B4, DATA.A:I, 9, FALSE)  [Costo_Mat]
+  
+Row 24:
+  A24: "Poltrona (tempo × 28€/h):"
+  B24: =B7 / 60 * 28
+  
+Row 25:
+  A25: "Compenso Medico:"
+  B25: =IF(VLOOKUP(B5, DATA.E:G, 3, FALSE)="Percentuale",
+           (B16-B22) * VLOOKUP(B5, DATA.E:G, 3, FALSE),
+           VLOOKUP(B5, DATA.E:G, 3, FALSE))
+  
+Row 26:
+  A26: "COSTO TOTALE:"
+  B26: =SUM(B22:B25)  [Colore: GRASSETTO E SFONDO GRIGIO]
+
+Row 29: "RISULTATO FINALE"
+Row 30:
+  A30: "MARGINE NETTO (€):"
+  B30: =B18 - B26
+  [Colore CONDIZIONALE: Rosso se <0, Giallo se <30, Verde se ≥30]
+  
+Row 31:
+  A31: "MARGINE NETTO (%):"
+  B31: =IF(B18<>0, B30/B18*100, 0)
+  [Colore CONDIZIONALE: Rosso se <15%, Giallo se <25%, Verde se ≥25%]
+
+Row 33:
+  A33: "INTERPRETAZIONE:"
+  B33-B35: [Testo dinamico usando IF]
+    =IF(B30<0, "❌ PERDITA! Questo medico costa più che guadagna.",
+         IF(B30<15, "🟡 MARGINE BASSO. Negoziare tempo o compenso.",
+            "✅ MARGINE ACCETTABILE. Prestazione profittevole."))
+
+========================================================================
+FOGLIO 3: "GRAFICO_TORNADO" - Analisi di Sensibilità
+========================================================================
+
+TABELLA PER IL TORNADO (vicino alle celle di input):
+
+Variabile | Impatto_Su_Margine (€) | Impatto_% | Ordine
+────────────────────────────────────────────────────
+Tempo Esecuzione | =SOMMA cambiamenti tempo | ... | 1
+Sconto Paziente | =SOMMA cambiamenti sconto | ... | 2
+Saturazione Poltrona | =SOMMA cambiamenti saturazione | ... | 3
+
+COME CREARE IL GRAFICO:
+
+1. Copia la tabella delle 3 leve (Tempo, Sconto, Saturazione)
+2. Per ogni leva, calcola il margine con:
+   - Valore MINIMO della leva
+   - Valore MASSIMO della leva
+   - Calcola la DIFFERENZA (impatto)
+
+3. Esempio (Tempo):
+   - Tempo min (30 min): Margine = 65€
+   - Tempo max (150 min): Margine = 25€
+   - Impatto = 65 - 25 = 40€
+
+4. Inserisci un grafico a barre orizzontale con:
+   - Asse Y: Nome delle 3 leve
+   - Asse X: Impatto in €
+   - Ordina per impatto decrescente (Tornado shape)
+
+========================================================================
+FORMATTAZIONE CONDIZIONALE
+========================================================================
+
+Margine €:
+  - ROSSO (scuro) se < 0€
+  - GIALLO se 0-30€
+  - VERDE se > 30€
+
+Margine %:
+  - ROSSO (scuro) se < 15%
+  - GIALLO se 15-25%
+  - VERDE se > 25%
+
+Costo Totale:
+  - GRASSETTO + SFONDO GRIGIO per distinguerlo
+
+========================================================================
+DATA VALIDATION (Dropdown)
+========================================================================
+
+Per la cella "Prestazione" (B4):
+  1. Seleziona B4
+  2. Vai a Dati > Convalida dati
+  3. Criteri: Elenco
+  4. Origine: =DATA.$B$2:$B$37  [Tutte le prestazioni univoche]
+
+Per la cella "Medico" (B5):
+  1. Seleziona B5
+  2. Vai a Dati > Convalida dati
+  3. Criteri: Elenco
+  4. Origine: =DATA.$E$2:$E$37  [Tutti i medici univoci]
+
+========================================================================
+SLIDER / BARRE DI SCORRIMENTO (Optional, ma spettacolare)
+========================================================================
+
+Se vuoi rendere il simulatore SUPER interattivo:
+
+1. Vai a Sviluppo > Inserisci > Barra di scorrimento (Form Control)
+2. Per Leva 1 (Tempo):
+   - Collega a cella B7
+   - Min: 30, Max: 150, Step: 1
+3. Per Leva 2 (Sconto):
+   - Collega a cella B9
+   - Min: 0, Max: 15, Step: 0.5
+4. Per Leva 3 (Saturazione):
+   - Collega a cella B11
+   - Min: 10, Max: 40, Step: 1
+
+Quando muovi lo slider, il valore in B7/B9/B11 cambia automaticamente
+e il margine si aggiorna in tempo reale! 🎮
+
+========================================================================
+TEST FINALE
+========================================================================
+
+Testa il simulatore con questi 3 scenari:
+
+SCENARIO 1: "Igiene da Dr. Rossi - Baseline"
+  Prestazione: Igiene Dentale
+  Medico: Dr. Rossi
+  Tempo: 30 min (standard)
+  Sconto: 0%
+  Risultato atteso: Margine positivo alto ✅
+
+SCENARIO 2: "Endodonzia da Dr. Bianchi - Con Sconto"
+  Prestazione: Endodonzia Molare
+  Medico: Dr. Bianchi (42%)
+  Tempo: 90 min
+  Sconto: 10%
+  Risultato atteso: Margine basso 🟡
+
+SCENARIO 3: "Corona da Dr. Verdi - Fisso"
+  Prestazione: Corona Zirconio
+  Medico: Dr. Verdi (180€ fisso)
+  Tempo: 120 min
+  Sconto: 0%
+  Risultato atteso: Margine medio-alto ✅
+
+========================================================================
+FINE - Il file è pronto per la demo!
+========================================================================
