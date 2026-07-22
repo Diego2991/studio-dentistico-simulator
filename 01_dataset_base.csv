@@ -1,0 +1,89 @@
+SHEET: Listino Studio
+ID_Prestazione,Nome_Prestazione,Prezzo_Listino,Costo_Lab_Default,Tempo_Standard_Min
+1,Igiene Dentale,80,0,30
+2,Devitalizzazione (Endodonzia) Molare,350,50,90
+3,Devitalizzazione (Endodonzia) Incisivo,250,40,60
+4,Corona Dentale (Metallo-Ceramica),600,150,120
+5,Corona Dentale (Zirconio),800,200,120
+6,Ponte 3 elementi,1500,400,180
+7,Impianto Dentale (Solo inserzione),1200,300,90
+8,Abutment + Corona su Impianto,900,250,120
+9,Faccetta Estetica (Veneer),400,100,60
+10,Detartaraggio Profondo,150,0,45
+11,Estrazione Dentale Semplice,200,20,30
+12,Estrazione Dentale Complessa,400,80,60
+---
+SHEET: Anagrafica Materiali
+ID_Materiale,Nome_Materiale,Categoria,Costo_Unitario_EUR,Unita_Misura
+M001,Composito Universale (fiala),Restauro,8,fiala
+M002,Resina Fluida,Restauro,5,fiala
+M003,Etchant (acido fosforico),Adesivi,3,ml
+M004,Adesivo Universale,Adesivi,12,fiala
+M005,Guttaperca,Endodonzia,6,cono
+M006,Cemento Endodontico,Endodonzia,15,tubo
+M007,Lima Endodontica (monouso),Endodonzia,4,pezzo
+M008,Impianto Titanio Grado 5,Implantologia,110,pezzo
+M009,Abutment Personalizzato,Implantologia,65,pezzo
+M010,Vite di Fissazione,Implantologia,8,pezzo
+M011,Corona Ceramica (Metallo),Protesi,140,pezzo
+M012,Corona Zirconio,Protesi,180,pezzo
+M013,Veneer Ceramico,Estetica,85,pezzo
+M014,Diga di Gomma (monouso),Consumibili,2,pezzo
+M015,Disinfettante Strumenti,Consumibili,0.5,ml
+---
+SHEET: Distinta Base (BOM)
+ID_Prestazione,ID_Materiale,Quantita
+1,M014,1
+1,M015,5
+2,M005,5
+2,M006,1
+2,M007,4
+2,M014,1
+2,M015,10
+3,M005,3
+3,M006,1
+3,M007,2
+3,M014,1
+3,M015,8
+4,M011,1
+4,M014,1
+4,M015,10
+5,M012,1
+5,M014,1
+5,M015,10
+6,M011,2
+6,M014,1
+6,M015,15
+7,M008,1
+7,M009,1
+7,M010,1
+7,M014,1
+7,M015,10
+8,M012,1
+8,M009,1
+8,M010,1
+8,M014,1
+8,M015,10
+9,M013,1
+9,M014,1
+9,M015,5
+10,M014,1
+10,M015,8
+11,M014,1
+11,M015,5
+12,M014,2
+12,M015,10
+---
+SHEET: Medici
+ID_Medico,Nome_Medico,Specializzazione,Tipo_Accordo,Valore_Accordo,Descrizione
+1,Dr. Rossi,Generico,Percentuale,0.35,Giovane, chiede il 35% sul compensabile
+2,Dr. Bianchi,Implantologia,Percentuale,0.42,Senior esperto, richiede il 42%
+3,Dr. Verdi,Estetica,Fisso,180,Lavora solo per prestazioni estetiche (Veneer, Corona Zirconio) a 180€ a seduta
+---
+SHEET: Parametri Studio
+Parametro,Valore,Unita_Misura,Note
+Costo_Orario_Poltrona,28,EUR/ora,"Comprende affitto, ammortamento attrezzature, utenze, ASO"
+Sconto_Medio_Paziente,0.08,%, "Sconti medi applicati (0-15%)"
+Commissione_Finanziamento,0.04,%, "Se il paziente paga con finanziamento esterno (PagoDil, Compass)"
+Saturazione_Poltrona_Ore_Settimana,30,ore, "Ore settimanali medie di utilizzo poltrona"
+Margine_Minimo_Target,0.25,%, "Margine netto minimo per considerare la prestazione profittevole"
