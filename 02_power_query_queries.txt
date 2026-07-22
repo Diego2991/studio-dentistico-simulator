@@ -1,0 +1,213 @@
+// ============================================================================
+// POWER QUERY - Query M per Simulatore Margini Studio Dentistico
+// ============================================================================
+// Importa questi codici in Power Query Editor (Dati > Nuova Query > Da Altre Origini > Modifica Query)
+// Adatta i path al tuo PC locale
+
+// ============================================================================
+// QUERY 1: Carica Listino Studio
+// ============================================================================
+
+let
+    Origine = Csv.Document(File.Contents("C:\Users\TuoUtente\Desktop\01_dataset_base.csv"),
+    [Delimiter=",", Columns=5, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+    
+    // Filtra solo la sezione "Listino Studio"
+    riga_intestazione = Table.SelectRows(Origine, each Text.StartsWith([Column1], "SHEET: Listino")),
+    
+    // Estrai le righe dal Listino
+    ListinoStudio = Table.Skip(riga_intestazione, 1),
+    
+    // Imposta intestazioni
+    Intestazioni = Table.PromoteHeaders(ListinoStudio),
+    
+    // Cambia tipi di dati
+    TipiCambiati = Table.TransformColumnTypes(Intestazioni,{
+        {"ID_Prestazione", Int64.Type},
+        {"Nome_Prestazione", type text},
+        {"Prezzo_Listino", type number},
+        {"Costo_Lab_Default", type number},
+        {"Tempo_Standard_Min", Int64.Type}
+    })
+in
+    TipiCambiati
+
+
+// ============================================================================
+// QUERY 2: Carica Anagrafica Materiali
+// ============================================================================
+
+let
+    Origine = Csv.Document(File.Contents("C:\Users\TuoUtente\Desktop\01_dataset_base.csv"),
+    [Delimiter=",", Columns=5, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+    
+    // Filtra solo la sezione "Anagrafica Materiali"
+    riga_intestazione = Table.SelectRows(Origine, each Text.StartsWith([Column1], "SHEET: Anagrafica")),
+    IntestinazioneMateriali = Table.PromoteHeaders(riga_intestazione),
+    
+    // Cambia tipi
+    TipiCambiati = Table.TransformColumnTypes(IntestinazioneMateriali,{
+        {"ID_Materiale", type text},
+        {"Nome_Materiale", type text},
+        {"Categoria", type text},
+        {"Costo_Unitario_EUR", type number},
+        {"Unita_Misura", type text}
+    })
+in
+    TipiCambiati
+
+
+// ============================================================================
+// QUERY 3: Carica Distinta Base (BOM)
+// ============================================================================
+
+let
+    Origine = Csv.Document(File.Contents("C:\Users\TuoUtente\Desktop\01_dataset_base.csv"),
+    [Delimiter=",", Columns=3, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+    
+    // Filtra sezione "Distinta Base"
+    riga_intestazione = Table.SelectRows(Origine, each Text.StartsWith([Column1], "SHEET: Distinta")),
+    BOM = Table.PromoteHeaders(riga_intestazione),
+    
+    // Cambia tipi
+    TipiCambiati = Table.TransformColumnTypes(BOM,{
+        {"ID_Prestazione", Int64.Type},
+        {"ID_Materiale", type text},
+        {"Quantita", type number}
+    })
+in
+    TipiCambiati
+
+
+// ============================================================================
+// QUERY 4: Carica Medici
+// ============================================================================
+
+let
+    Origine = Csv.Document(File.Contents("C:\Users\TuoUtente\Desktop\01_dataset_base.csv"),
+    [Delimiter=",", Columns=6, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+    
+    // Filtra sezione "Medici"
+    riga_intestazione = Table.SelectRows(Origine, each Text.StartsWith([Column1], "SHEET: Medici")),
+    Medici = Table.PromoteHeaders(riga_intestazione),
+    
+    // Cambia tipi
+    TipiCambiati = Table.TransformColumnTypes(Medici,{
+        {"ID_Medico", Int64.Type},
+        {"Nome_Medico", type text},
+        {"Specializzazione", type text},
+        {"Tipo_Accordo", type text},
+        {"Valore_Accordo", type number},
+        {"Descrizione", type text}
+    })
+in
+    TipiCambiati
+
+
+// ============================================================================
+// QUERY 5: MASTER TABLE - Calcola Margini per Prestazione + Medico
+// ============================================================================
+// QUESTA è la query principale che incrocia tutto
+
+let
+    // Carica le tabelle
+    ListinoStudio = ListinoStudio,  // La query 1
+    Materiali = AnagraficaMateriali, // La query 2
+    BOM = DistintaBase,              // La query 3
+    Medici = Medici,                 // La query 4
+    
+    // Step 1: Per ogni prestazione, calcola il costo materiali dalla BOM
+    BOM_ConCosti = Table.AddColumn(BOM, "Costo_Materiale_Riga",
+        each Table.First(
+            Table.SelectRows(Materiali, 
+                each [ID_Materiale] = [ID_Materiale_BOM]
+            )
+        )[Costo_Unitario_EUR] * [Quantita]
+    ),
+    
+    CostoMaterialiPerPrestazione = Table.Group(BOM_ConCosti, {"ID_Prestazione"}, {
+        {"Costo_Totale_Materiali", each List.Sum([Costo_Materiale_Riga])}
+    }),
+    
+    // Step 2: Join Listino + Costi Materiali
+    ListinoConMateriali = Table.NestedJoin(
+        ListinoStudio,
+        {"ID_Prestazione"},
+        CostoMaterialiPerPrestazione,
+        {"ID_Prestazione"},
+        "Materiali"
+    ),
+    
+    ExpandMateriali = Table.ExpandTableColumn(ListinoConMateriali, "Materiali",
+        {"Costo_Totale_Materiali"}
+    ),
+    
+    // Step 3: Cross Join con Medici (ogni prestazione x ogni medico)
+    ConMedici = Table.NestedJoin(
+        ExpandMateriali,
+        {"ID_Prestazione"},
+        Medici,
+        {"ID_Prestazione"},
+        "Medici"
+    ),
+    
+    // Nota: Qui dovresti fare un cross join per avere ogni prestazione con ogni medico
+    // Se usi Excel puro, fai questa logica direttamente nel simulatore
+    
+    ConMedici_Expanded = Table.ExpandTableColumn(ConMedici, "Medici",
+        {"ID_Medico", "Nome_Medico", "Tipo_Accordo", "Valore_Accordo"}
+    ),
+    
+    // Step 4: Aggiungi colonne calcolate (Margini)
+    ConCalcoli = Table.AddColumns(ConMedici_Expanded,
+        {
+            {"Imponibile_Medico", each [Prezzo_Listino] - [Costo_Lab_Default]},
+            {"Compenso_Medico", each 
+                if [Tipo_Accordo] = "Percentuale" 
+                then [Imponibile_Medico] * [Valore_Accordo]
+                else [Valore_Accordo]
+            },
+            {"Costo_Poltrona", each ([Tempo_Standard_Min] / 60) * 28},  // 28 = costo/ora
+            {"Costo_Totale_Studio", each 
+                [Costo_Lab_Default] + [Costo_Totale_Materiali] + [Costo_Poltrona] + [Compenso_Medico]
+            },
+            {"Margine_Netto_EUR", each [Prezzo_Listino] - [Costo_Totale_Studio]},
+            {"Margine_Netto_Perc", each 
+                if [Prezzo_Listino] <> 0 
+                then ([Margine_Netto_EUR] / [Prezzo_Listino]) * 100
+                else 0
+            }
+        }
+    ),
+    
+    // Step 5: Cambia tipi finali
+    TipiFinal = Table.TransformColumnTypes(ConCalcoli,{
+        {"Imponibile_Medico", type number},
+        {"Compenso_Medico", type number},
+        {"Costo_Poltrona", type number},
+        {"Costo_Totale_Studio", type number},
+        {"Margine_Netto_EUR", type number},
+        {"Margine_Netto_Perc", type number}
+    }),
+    
+    // Step 6: Seleziona colonne finali (opzionale, per pulizia)
+    ColonneFinal = Table.SelectColumns(TipiFinal,{
+        "ID_Prestazione", "Nome_Prestazione", "Prezzo_Listino",
+        "ID_Medico", "Nome_Medico", "Tipo_Accordo",
+        "Costo_Lab_Default", "Costo_Totale_Materiali", "Tempo_Standard_Min",
+        "Imponibile_Medico", "Compenso_Medico", "Costo_Poltrona",
+        "Costo_Totale_Studio", "Margine_Netto_EUR", "Margine_Netto_Perc"
+    })
+in
+    ColonneFinal
+
+
+// ============================================================================
+// NOTE IMPORTANTI
+// ============================================================================
+// 1. Path: Sostituisci "C:\Users\TuoUtente\Desktop\" con il tuo percorso reale
+// 2. Se usi Mac: C:\Users\... diventa /Users/nomeutente/Desktop/
+// 3. Se i CSV sono in OneDrive/Google Drive: Power Query li supporta nativamente
+// 4. Encoding: 65001 = UTF-8 (standard Excel). Se hai caratteri strani, prova 1252 (ANSI)
+// 5. Delimiter: Usa "," se il CSV è italiano, ";" se è tedesco/francese
+// 6. In Excel, vai a Dati > Trasforma Dati > Editor di Query per incollare questi codici
